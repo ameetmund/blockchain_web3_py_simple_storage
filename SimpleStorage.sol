@@ -21,8 +21,9 @@ contract Storage {
     //  * @dev Store value in variable
     //  * @param num value to store
     //  */
-    function store(uint256 _favNumber) public {
+    function store(uint256 _favNumber) public returns (uint256) {
         favNumber = _favNumber;
+        return _favNumber;
     }
 
     /**

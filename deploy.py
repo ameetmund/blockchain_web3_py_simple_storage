@@ -62,7 +62,7 @@ abi = compiled_sol["contracts"]["SimpleStorage.sol"]["Storage"]["abi"]
 #
 w3 = Web3(Web3.HTTPProvider("HTTP://127.0.0.1:7545"))
 network_id = 1337
-my_address = "0x2fb377C3c05B188d7816b6cD7A98533e0E8cB76B"
+my_address = "0x60960d10435e635EebA42761e3BCE3D1d6aE373d"
 # private_key = "b227aa55a9786185c36fbbe69170eb0b99b7d55ad6ac09b4234fdddcd4d1431c"
 private_key = os.getenv("PRIVATE_KEY")
 # print(private_key)
@@ -75,6 +75,7 @@ SimpleStorage = w3.eth.contract(abi=abi, bytecode=bytecode)
 nonce = w3.eth.getTransactionCount(my_address)
 # print(nonce)
 
+# Deploy a SimpleStorage contract
 # Build Transaction --> Sign Transaction --> Send Transaction
 # 1. Build Transaction
 transaction = SimpleStorage.constructor().buildTransaction(
@@ -94,3 +95,30 @@ txn_hash = w3.eth.send_raw_transaction(signed_txn.rawTransaction)
 
 # 4. Wait for the transaction receipt confirmation. It's part of a good practice
 txn_receipt = w3.eth.wait_for_transaction_receipt(txn_hash)
+
+# Working with SimpleStorage contract
+# For that we need Contract address and contract ABI
+simple_storage = w3.eth.contract(address=txn_receipt.contractAddress, abi=abi)
+
+# The following print statement will return -- > <Function retrieve() bound to ()>
+
+# When making a transaction with a blockchain, we can interact with them in two
+# ways.
+#   1. Call - Simulate making the call and getting a return value. These don't make
+#             a state change to the blockchain
+#   2. Transact - Makes a state change for a blockchain
+print(simple_storage.functions.retrieve())
+print(simple_storage.functions.retrieve().call())
+print(simple_storage.functions.store(7).call())
+
+# Please ensure that nonce value is not same as earlier. That's why it's incremented by 1
+store_transaction = simple_storage.functions.store(7).buildTransaction(
+    {"chain_id": network_id, "from": my_address, "nonce": nonce + 1}
+)
+
+sign_store_transaction = w3.eth.account.sign_transaction(
+    store_transaction, private_key=private_key
+)
+
+txn_hash_store = w3.eth.send_raw_transaction(sign_store_transaction.rawTransaction)
+txn_receipt_store = w3.eth.wait_for_transaction_receipt(txn_hash_store)
