@@ -1,5 +1,6 @@
 # In order to compile the solidity using python we need to import the following
-# packages from py-solc-x. Please import both compile_standar and install_solc
+# packages from py-solc-x (pip install py-solc-x).
+# Please import both compile_standard and install_solc
 from solcx import compile_standard, install_solc
 
 # In order to generate abi's
@@ -60,9 +61,9 @@ abi = compiled_sol["contracts"]["SimpleStorage.sol"]["Storage"]["abi"]
 # ways to do it. But as long as it's a fake key, it's fine. But for real world apps
 # follow other ways to use private keys. This is only for testing purpose.
 #
-w3 = Web3(Web3.HTTPProvider("HTTP://127.0.0.1:7545"))
+w3 = Web3(Web3.HTTPProvider("HTTP://127.0.0.1:8545"))
 network_id = 1337
-my_address = "0x60960d10435e635EebA42761e3BCE3D1d6aE373d"
+my_address = "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"
 # private_key = "b227aa55a9786185c36fbbe69170eb0b99b7d55ad6ac09b4234fdddcd4d1431c"
 private_key = os.getenv("PRIVATE_KEY")
 # print(private_key)
@@ -78,6 +79,7 @@ nonce = w3.eth.getTransactionCount(my_address)
 # Deploy a SimpleStorage contract
 # Build Transaction --> Sign Transaction --> Send Transaction
 # 1. Build Transaction
+print("Deploying SimpleStorage Contract....")
 transaction = SimpleStorage.constructor().buildTransaction(
     {
         "gasPrice": w3.eth.gas_price,
@@ -95,6 +97,7 @@ txn_hash = w3.eth.send_raw_transaction(signed_txn.rawTransaction)
 
 # 4. Wait for the transaction receipt confirmation. It's part of a good practice
 txn_receipt = w3.eth.wait_for_transaction_receipt(txn_hash)
+print("Deployed SimpleStorage Contract..... :-)")
 
 # Working with SimpleStorage contract
 # For that we need Contract address and contract ABI
@@ -107,13 +110,19 @@ simple_storage = w3.eth.contract(address=txn_receipt.contractAddress, abi=abi)
 #   1. Call - Simulate making the call and getting a return value. These don't make
 #             a state change to the blockchain
 #   2. Transact - Makes a state change for a blockchain
-print(simple_storage.functions.retrieve())
+# print(simple_storage.functions.retrieve())
 print(simple_storage.functions.retrieve().call())
-print(simple_storage.functions.store(7).call())
+# print(simple_storage.functions.store(7).call())
 
 # Please ensure that nonce value is not same as earlier. That's why it's incremented by 1
+print("Storing new value in SimpleStorage Contract....")
 store_transaction = simple_storage.functions.store(7).buildTransaction(
-    {"chain_id": network_id, "from": my_address, "nonce": nonce + 1}
+    {
+        "gasPrice": w3.eth.gas_price,
+        "chainId": network_id,
+        "from": my_address,
+        "nonce": nonce + 1,
+    }
 )
 
 sign_store_transaction = w3.eth.account.sign_transaction(
@@ -122,3 +131,30 @@ sign_store_transaction = w3.eth.account.sign_transaction(
 
 txn_hash_store = w3.eth.send_raw_transaction(sign_store_transaction.rawTransaction)
 txn_receipt_store = w3.eth.wait_for_transaction_receipt(txn_hash_store)
+# print(simple_storage.functions.retrieve().call())
+print(
+    f"Stored new value {simple_storage.functions.retrieve().call()} in SimpleStorage Contract...."
+)
+
+
+# We may opt out of using ganache gui and instead use ganache-cli. So for that following must
+# be installed.
+#   1. Check 'node --version'. If not present then install nodejs from nodejs.org. You
+#      can download specific version of node. For this I have used 12.18.4 by using
+#      the command 'nvm install 12.18.4'. You can use any other version by typing
+#      command 'nvm use version'. For example 'nvm use 9' to use version 9.
+#   2. Check 'yarn --version'. If not present then do 'npm install --global yarn'
+#   3. Add ganache-cli by typing 'yarn global add ganache-cli'. If there is an error
+#      durinig this installation then do the following -
+#           - 'sudo apt remove cmdtest'
+#           - 'sudo apt remove yarn'
+#           - 'npm install -g yarn'
+#           - 'yarn install'
+#           - 'yarn global add ganache-cli'
+#   4. Check the ganache version with 'ganache-cli --version'. Sometimes this doesn't work
+#      In those cases, please do the following -
+#           - 'npm install -g ganache-cli'
+#           - 'ganache-cli --version'
+
+# We can start ganache by 'ganache-cli -d'. -d option will ensure that everytime the accounts
+# remain same. Update the http link in the code, as well as the accounts.
